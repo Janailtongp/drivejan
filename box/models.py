@@ -59,6 +59,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self) -> str:
         return self.email
 
+    def get_api_token(self) -> Optional[str]:
+        token:  Optional[Token] = Token.objects.filter(user=self).first()
+        if token:
+            return token.key
+        return None
+
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:

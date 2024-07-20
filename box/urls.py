@@ -1,3 +1,6 @@
-#from django.conf.urls import url
+from django.urls import path
+from box.views import home_page
 
-urlpatterns = []
+urlpatterns = [
+    path('', home_page)
+]
