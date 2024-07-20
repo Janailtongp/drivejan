@@ -5,166 +5,59 @@
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
 	<link rel="stylesheet" href="{% static 'css/base.css' %}" />
 {% endblock %}
+
 <script type="text/javascript" src="{% static 'js/mithril.min.js' %}"></script>
 <script src="{% static 'js/jquery-3.3.1.min.js' %}"></script>
+<script src="{% static 'js/box_view.js' %}"></script>
 
 <div class="container">
     <div class="view-account">
         <section class="module">
             <div class="module-inner">
                 <div class="side-bar">
-                    <div class="user-info">
-                        <img class="img-profile img-circle img-responsive center-block" src="https://bootdey.com/img/Content/avatar/avatar6.png" alt="">
-                        <ul class="meta list list-unstyled">
-                            <li class="name">
-                                @{{ user.username }}
-                            </li>
-                            <li class="email small">{{ user.email }} <a href="#">
-                                
-                            </a></li>
-                            <li class="activity small">Acesso em: {{ user.last_login }}</li>
-                        </ul>
-                    </div>
-                    <nav class="side-menu">
-                        <ul class="nav">
-                            <li><a href="#"><span class="fa fa-user"></span> Perfil </a></li>
-                            <li class="active"><a href="#"><span class="fa fa-th"></span> Meu Drive </a></li>
-                        </ul>
-                    </nav>
+                    <div id="profile-card"></div>
+                    <div id="vertical-menu"></div>   
                 </div>
 
                 <div class="content-panel">
-                    <div class="content-header-wrapper">
-                        <h2 class="title">Seja bem vindo(a) <b>{{ user.name }}</b> </h2>
-                        <div class="actions">
-                            <button class="btn btn-success"><i class="fa fa-plus"></i> Carregar novo item</button>
-                        </div>
-                    </div>
+                    <div id="wellcome"></div>
                     <div class="drive-wrapper drive-list-view">
-                        <div class="table-responsive drive-items-table-wrapper">
-                            <span id="hello"></span>
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th class="type"></th>
-                                        <th class="name truncate">Nome</th>
-                                        <th class="date">Enviado</th>
-                                        <th class="download"></th>
-                                        <th class="size">Tamanho</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-text-o text-primary"></i></td>
-                                        <td class="name truncate"><a href="#">Meeting Notes.txt</a></td>
-                                        <td class="date">Sep 23, 2015</td>
-                                        <td class="download"></td>
-                                        <td class="size">18 KB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-image-o text-primary"></i></td>
-                                        <td class="name truncate"><a href="#">Stock Image DC3214.JPG</a></td>
-                                        <td class="date">Sep 21, 2015</td>
-                                        <td class="download"></td>
-                                        <td class="size">235 MB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-powerpoint-o text-warning"></i></td>
-                                        <td class="name truncate"><a href="#">Deck Lorem Ipsum.ppt</a></td>
-                                        <td class="date">Sep 20, 2015</td>
-                                        <td class="download"></td>
-                                        <td class="size">136 MB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-excel-o text-success"></i></td>
-                                        <td class="name truncate"><a href="#">Project Tasks.csv</a></td>
-                                        <td class="date">Aug 16, 2015</td>
-                                        <td class="download"></td>
-                                        <td class="size">32 KB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-pdf-o text-warning"></i></td>
-                                        <td class="name truncate"><a href="#">Project Brief.pdf</a></td>
-                                        <td class="date">Aug 15, 2015</td>
-                                        <td class="download"></td>
-                                        <td class="size">73 MB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-image-o text-primary"></i></td>
-                                        <td class="name truncate"><a href="#">Image DS1341.JPG</a></td>
-                                        <td class="date">Aug 15, 2015</td>
-                                        <td class="download"></td>
-                                        <td class="size">171 MB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-image-o text-primary"></i></td>
-                                        <td class="name truncate"><a href="#">Image DS3214.JPG</a></td>
-                                        <td class="date">Aug 15, 2015</td>
-                                        <td class="download"></td>
-                                        <td class="size">171 MB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-folder text-primary"></i></td>
-                                        <td class="name truncate"><a href="#">UX Resource</a></td>
-                                        <td class="date">Feb 07, 2015</td>
-                                        <td class="download"></td>
-                                        <td class="size">--</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-folder text-primary"></i></td>
-                                        <td class="name truncate"><a href="#">Prototypes</a></td>
-                                        <td class="date">Jan 03, 2015</td>
-                                        <td class="download"></td>
-                                        <td class="size">--</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-word-o text-info"></i></td>
-                                        <td class="name truncate"><a href="#">Quisque.doc</a></td>
-                                        <td class="date">Oct 21, 2014</td>
-                                        <td class="download"></td>
-                                        <td class="size">27 KB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-word-o text-info"></i></td>
-                                        <td class="name truncate"><a href="#">Aenean imperdiet.doc</a></td>
-                                        <td class="date">Oct 16, 2014</td>
-                                        <td class="download"></td>
-                                        <td class="size">23 KB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-code-o text-primary"></i></td>
-                                        <td class="name truncate"><a href="#">demo.html</a></td>
-                                        <td class="date">Aug 23, 2014</td>
-                                        <td class="download"></td>
-                                        <td class="size">10 KB</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="type"><i class="fa fa-file-image-o text-success"></i></td>
-                                        <td class="name truncate"><a href="#">Image DS2314.JPG</a></td>
-                                        <td class="date">Aug 06, 2014</td>
-                                        <td class="download"></td>
-                                        <td class="size">325 MB</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <span id="files-list"></span>
                     </div>
                 </div>
+
             </div>
         </section>
     </div>
 </div>
 
 <script type="text/javascript">
-    
-var TextComonent = {
-    view: vnode => {
-        return m("h1", "Holla Mithriljs")
-    }
-}
+    $(document).ready(() => {
+        // Mount ProfileCardComponent
+        m.mount(document.getElementById("profile-card"),  {
+            view: vn => {
+                return m(ProfileCardComponent, {
+                    username: "{{ user.username }}",
+                    email: "{{ user.email }}",
+                    last_login: "{{ user.last_login }}",
+                    image: "https://bootdey.com/img/Content/avatar/avatar6.png"
+                })
+            }
+        })
+        // VerticalMenuComponent 
+        m.mount(document.getElementById("vertical-menu"), VerticalMenuComponent) 
+        
+        // WellcomeComponent 
+        m.mount(document.getElementById("wellcome"),  {
+            view: vn => {
+                return m(WellcomeComponent, {
+                    name: "{{ user.name }}",
+                    folder_id: "{{ current_folder }}",
+                })
+            }
+        })
 
-
-$(document).ready(() => {
-    m.mount(document.getElementById("hello"), TextComonent)
-})
+        //Files list
+        m.mount(document.getElementById("files-list"), Tablecomponent) 
+    })
 </script>
