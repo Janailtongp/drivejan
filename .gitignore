@@ -1,8 +1,10 @@
-attachments/
+attachments
 __pycache__/
 box/__pycache__/
+setup/__pycache__/
 *.py[cod]
 *.pyc
 # Environments
 .env
 .venv
+*.pdf
