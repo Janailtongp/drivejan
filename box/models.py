@@ -148,6 +148,7 @@ class Folder(MPTTModel):
                 "pk": folder.pk,
                 "name": folder.name,
                 "created_at": folder.created_at.strftime('%d/%m/%Y as %H:%m'),
+                "get_amount": folder.get_amount(),
             })
         for attachment in self.files.all():
             items.append({
@@ -157,9 +158,19 @@ class Folder(MPTTModel):
                 "short_name": attachment.get_filename_elipsys(),
                 "created_at": attachment.created_at.strftime('%d/%m/%Y as %H:%m'),
                 "url": attachment.get_url(),
+                "get_size": attachment.get_size(),
             })
         return items
 
+    def get_amount(self) -> str:
+        folders: int = self.get_children().count()
+        files: int = self.files.count()
+        amount: int = folders + files
+        if not amount:
+            return "Vazia"
+        if amount == 1:
+            return f"{amount} item"
+        return f"{amount} itens"
 
 def attachment_unic_path(instance, filename):
     """Função usada no upload_to do Anexo para calcular um nome único."""
@@ -183,6 +194,20 @@ class Attachment(models.Model):
 
     class Meta:
         ordering = ("file",)
+
+    def get_size(self) -> str:
+        GB: int = 1024 ** 3
+        MB: int = 1024 ** 2
+        KB: int = 1024
+
+        size: int = self.file.size or 0
+        if int(size / GB) > 0:
+            return "{:.2f} GB".format((size / GB))
+        elif int(size / MB) > 0:
+            return "{:.2f} MB".format((size / MB))
+        elif int(size / KB) > 0:
+            return "{:.2f} KB".format((size / KB))
+        return f"{size} Bytes"
 
     def get_filename_elipsys(self):
         name: str = self.get_realy_filename()

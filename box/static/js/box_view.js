@@ -62,15 +62,234 @@ var WellcomeComponent = {
             m("h2.title", `Seja bem vindo(a) ${user.name}`),
             m(".actions", [
                 (
-                    Tablecomponent.folder_id ? m("button.btn.btn-success", [
-                        m("i.fa.fa-plus"), " Add arquivo"
+                    Tablecomponent.folder_id ? m("button.btn.btn-success.mr-1", {
+                        onclick: evt => {
+                            FileModalComponent.show(vnode.attrs.uuid)
+                        }
+                    },[
+                        m("i.fa.fa-plus"), " Adicionar arquivo"
                     ]) : ""
                 ),
-                m("button.btn.btn-info", [
+                m("button.btn.btn-info.mr-1", {
+                    onclick: evt => {
+                        FolderModalComponent.show(uuid=vnode.attrs.uuid)
+                    }
+                }, [
                     m("i.fa.fa-plus"), " Criar nova pasta"
+                ]),
+                m("button.btn.btn-danger.ml-1", {
+                    onclick: evt => {
+                        const CURRENT_UUID = window.localStorage.getItem("CURRENT_UUID")
+                        if (CURRENT_UUID) {
+                            BoxStorage.token[CURRENT_UUID] = null
+                            window.localStorage.removeItem(CURRENT_UUID)
+                        }
+                        window.localStorage.removeItem("CURRENT_UUID")
+                        window.localStorage.removeItem("UUID_EXPIRED_TIME")
+                        Tablecomponent.get_folder(vnode, vnode.attrs.uuid)
+                    }
+                }, [
+                    m("i.fa.fa-power-off"), " Sair"
                 ])
             ])
         ])
+    }
+}
+
+var FolderModalComponent = {
+    id: "folder-modal-component",
+    ADD: 1,
+    EDIT: 2,
+    mode: null,
+    data: {},
+    view: vnode => {
+        return m(ModalComponent, {
+            id: FolderModalComponent.id,
+            title: "Add/Edit Pasta",
+            body: FolderModalComponent.body(vnode),
+            footer: FolderModalComponent.footer(vnode),
+        })
+    },
+    body: vnode => {
+        if (FolderModalComponent.mode == FolderModalComponent.EDIT) {
+            if (!FolderModalComponent.data) {
+                return "Carregando ..."
+            }
+        }
+        return m("form", [
+            m(".orm-group", [
+                m("label", {for:"folder_name"}, "Nome da pasta"),
+                m("input.form-control#folder_name", {
+                    type: "text",
+                    placeholder: "Meus documentos",
+                    value: FolderModalComponent.data.name||"",
+                    onchange: evt => {
+                        FolderModalComponent.data.name = evt.target.value
+                    }
+                }, "Nome da pasta"),
+            ])
+        ])
+    },
+    footer: vnode => {
+        return [
+            m("button.btn btn-success", {
+                onclick: evt => {
+                    if (FolderModalComponent.data.name) {
+                        FolderModalComponent.save(vnode)
+                    }
+                }
+            }, "Salvar"),
+            m("button.btn btn-danger", {
+                onclick: evt => {
+                    FolderModalComponent.hide()
+                }
+            }, "Cancelar")
+        ]
+    },
+    hide: () => {
+        FolderModalComponent.mode = null
+        FolderModalComponent.uuid = null
+        FolderModalComponent.folder_id = null
+        FolderModalComponent.parent = null
+        FolderModalComponent.data = {}
+        
+		$('#' + FolderModalComponent.id).modal('hide')
+	},
+	show: (uuid, folder_id=null) => {
+        FolderModalComponent.uuid = uuid
+        FolderModalComponent.mode = FolderModalComponent.ADD
+        if (folder_id) {
+            FolderModalComponent.mode = FolderModalComponent.EDIT
+            FolderModalComponent.folder_id = folder_id
+            FolderModalComponent.load_data(FolderModalComponent.uuid, FolderModalComponent.folder_id)
+        }
+
+		if (!FolderModalComponent.initiated) {
+			m.mount(new_elem('span'), FolderModalComponent)
+			FolderModalComponent.initiated = true
+		}
+		$('#' + FolderModalComponent.id).modal({
+			backdrop: 'static', keyboard: false
+		})
+	},
+    load_data: (uuid, folder_id) => {
+        m.request({
+            url: `/api/box/folders/${folder_id}/`,
+            method: "GET",
+            headers: {
+                "Authorization": "Token " + BoxStorage.token[uuid]
+            }   
+        }).then(data => {
+            FolderModalComponent.data = data
+        }).catch(err => {
+            console.log(err)
+        })
+    },
+    save: (vnode) => {
+        let method = "POST"
+        let url = "/api/box/folders/"
+        let data = FolderModalComponent.data
+        data["owner_id"] = (BoxStorage.user[FolderModalComponent.uuid]||{}).pk
+        data["parent_id"] = Tablecomponent.folder_id||null
+
+        if (FolderModalComponent.mode == FolderModalComponent.EDIT) {
+            method = "PATCH"
+            url = url + FolderModalComponent.folder_id + "/"
+            data = {name: FolderModalComponent.data.name}
+        }
+
+        m.request({
+            url: url,
+            method: method,
+            headers: {
+                "Authorization": "Token " + BoxStorage.token[FolderModalComponent.uuid]
+            },
+            body: data
+        }).then(data => {
+            toastr.success("Operação bem-sucedida!")
+            Tablecomponent.get_folder(vnode, FolderModalComponent.uuid)
+            FolderModalComponent.hide()
+        }).catch(err => {
+            console.log(err)
+        })
+    }
+}
+
+var FileModalComponent = { 
+    // FIXME: add DraggDrop file to upload
+    id: "file-modal-component",
+    data: {},
+    view: vnode => {
+        return m(ModalComponent, {
+            id: FileModalComponent.id,
+            title: "Adicionar aqruivo",
+            body: FileModalComponent.body(vnode),
+            footer: FileModalComponent.footer(vnode),
+        })
+    },
+    body: vnode => {
+        return m("form", [
+            m(".form-group", [
+                m("label", {for:"file-data"}, "Importar arquivo"),
+                m("input#ile-data", {
+                    type: "file",
+                    onchange: evt => {
+                        FileModalComponent.data.file = evt.target.files[0]
+                    }
+
+                })
+            ])
+        ])
+    },
+    footer: vnode => {
+        return [
+            m("button.btn btn-success", {
+                onclick: evt => {
+                    if (FileModalComponent.data.file) {
+                        FileModalComponent.save(vnode)
+                    }
+                }
+            }, "Salvar"),
+            m("button.btn btn-danger", {
+                onclick: evt => {
+                    FileModalComponent.hide()
+                }
+            }, "Cancelar")
+        ]
+    },
+    hide: () => {
+        FileModalComponent.data = {}
+		$('#' + FileModalComponent.id).modal('hide')
+	},
+	show: (uuid) => {
+        FileModalComponent.uuid = uuid
+		if (!FileModalComponent.initiated) {
+			m.mount(new_elem('span'), FileModalComponent)
+			FileModalComponent.initiated = true
+		}
+		$('#' + FileModalComponent.id).modal({
+			backdrop: 'static', keyboard: false
+		})
+	},
+    save: (vnode) => {
+        let form_data = new FormData()
+        form_data.append("file", FileModalComponent.data.file)
+        form_data.append("folder_id", Tablecomponent.folder_id)
+
+        m.request({
+            url: "/api/box/attachments/",
+            method: "POST",
+            headers: {
+                "Authorization": "Token " + BoxStorage.token[FileModalComponent.uuid]
+            },
+            body: form_data
+        }).then(data => {
+            toastr.success("Operação bem-sucedida!")
+            Tablecomponent.get_folder(vnode, FileModalComponent.uuid)
+            FileModalComponent.hide()
+        }).catch(err => {
+            console.log(err)
+        })
     }
 }
 
@@ -79,7 +298,7 @@ var Tablecomponent = {
     oninit: vnode => {
         Tablecomponent.get_folder(vnode)
     },
-    get_folder: (vnode) => {
+    get_folder: (vnode, uuid=null) => {
         let url = "/api/box/folders/"
         if (Tablecomponent.folder_id) {
             url = `/api/box/folders/${Tablecomponent.folder_id}/`
@@ -88,10 +307,10 @@ var Tablecomponent = {
             url: url,
             method: "GET",
             headers: {
-                "Authorization": "Token " + BoxStorage.token[vnode.attrs.uuid]
+                "Authorization": "Token " + BoxStorage.token[uuid||vnode.attrs.uuid]
             }   
         }).then(data => {
-            BoxStorage.data[vnode.attrs.uuid] = Tablecomponent.folder_id ? [data] : data
+            BoxStorage.data[uuid||vnode.attrs.uuid] = Tablecomponent.folder_id ? [data] : data
         }).catch(err => {
             console.log(err)
         })
@@ -141,6 +360,7 @@ var Tablecomponent = {
                 "pk": folder.pk,
                 "name": folder.name,
                 "created_at": folder.created_at,
+                "get_amount": folder.get_amount,
             }
         })
     },
@@ -159,7 +379,7 @@ var Tablecomponent = {
                         m("th", ""),
                         m("th", "Nome"),
                         m("th", "Enviado"),
-                        m("th", "Tamanho"),
+                        m("th", ""),
                         m("th", ""),
                     ])
                 ),
@@ -168,8 +388,8 @@ var Tablecomponent = {
                         m("td", FileComponent.get_icon(item)),
                         m("td", {title: item.name}, Tablecomponent.get_linked_name(vnode, item)),
                         m("td", item.created_at),
-                        m("td", item.size),
-                        m("td", FileComponent.get_url(item)),
+                        m("td", item.get_size||item.get_amount),
+                        m("td", Tablecomponent.actions(vnode, item)),
                     ])
                 }))
             ]),
@@ -189,7 +409,64 @@ var Tablecomponent = {
                 }
             }, name)
         }
-        return m("a", {href: item.url, target: "blank_"}, name)
+        return m("a", {href: "javascript:void(0);", target: ""}, name)
+    },
+    actions: (vnode, item) => {
+        if(item.type == "folder") {
+            return [
+                // Edit Folder
+                m("a.mr-1", {
+                    href: "javascript:void(0);",
+                    onclick: evt => {
+                        FolderModalComponent.show(vnode.attrs.uuid, item.pk)
+                    },
+                    title:"Editar pasta"
+                }, m("i.fa.fa-pencil")),
+                // Delete Folder
+                m("a", {
+                    href: "javascript:void(0);",
+                    onclick: evt => {
+                        m.request({
+                            url: `/api/box/folders/${item.pk}/`,
+                            method: "DELETE",
+                            headers: {
+                                "Authorization": "Token " + BoxStorage.token[vnode.attrs.uuid]
+                            }   
+                        }).then(data => {
+                            toastr.success("Operação bem-sucedida!")
+                            Tablecomponent.get_folder(vnode, vnode.attrs.uuid)
+                            FolderModalComponent.hide()
+                        }).catch(err => {
+                            console.log(err)
+                        })
+                    },
+                    title:"Excluir pasta"
+                }, m("i.fa.fa-trash")),
+            ]
+        } else {
+            return [
+                FileComponent.get_url(item),
+                m("a.ml-1", {
+                    href: "javascript:void(0);",
+                    onclick: evt => {
+                        m.request({
+                            url: `/api/box/attachments/${item.pk}/`,
+                            method: "DELETE",
+                            headers: {
+                                "Authorization": "Token " + BoxStorage.token[vnode.attrs.uuid]
+                            }   
+                        }).then(data => {
+                            toastr.success("Operação bem-sucedida!")
+                            Tablecomponent.get_folder(vnode, vnode.attrs.uuid)
+                            FolderModalComponent.hide()
+                        }).catch(err => {
+                            console.log(err)
+                        })
+                    },
+                    title:"Excluir Arquivo"
+                }, m("i.fa.fa-trash")),
+            ]
+        }
     }
 }
 
@@ -203,6 +480,7 @@ var FileComponent = {
         let icon = {
             "txt": ".fa.fa-file-text-o",
             "jpg": ".fa.fa-file-image-o",
+            "png": ".fa.fa-file-image-o",
             "ptt": ".fa.fa-file-powerpoint-o",
             "csv": ".fa.fa-file-excel-o",
             "pdf": ".fa.fa-file-pdf-o",
@@ -217,7 +495,8 @@ var FileComponent = {
             return ""
         return m("a", {
             href: item.url,
-            target: "_blanck"
+            target: "_blanck",
+            download: "download"
         }, m("i.fa.fa-download"))
     }
 }
