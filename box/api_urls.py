@@ -10,6 +10,6 @@ router.register(r'attachments', api_view.AttachmentViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path(r"api-token-auth/", obtain_auth_token, name="api_token_auth"),
+    path(r"qrcode/<str:uuid>/", api_view.qrcode_generate, name="api_qrcode"),
 ]

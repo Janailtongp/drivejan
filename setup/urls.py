@@ -24,4 +24,4 @@ urlpatterns = [
 ]
 if "box" in settings.INSTALLED_APPS:
     urlpatterns.append(re_path(r"^api/box/", include("box.api_urls")))
-    urlpatterns.append(re_path(r"^box/", include("box.urls")))
+    urlpatterns.append(re_path(r"", include("box.urls")))

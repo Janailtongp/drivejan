@@ -7,57 +7,24 @@
 {% endblock %}
 
 <script type="text/javascript" src="{% static 'js/mithril.min.js' %}"></script>
-<script src="{% static 'js/jquery-3.3.1.min.js' %}"></script>
-<script src="{% static 'js/box_view.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/jquery-3.3.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/moment.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/box_view.js' %}"></script>
 
-<div class="container">
-    <div class="view-account">
-        <section class="module">
-            <div class="module-inner">
-                <div class="side-bar">
-                    <div id="profile-card"></div>
-                    <div id="vertical-menu"></div>   
-                </div>
-
-                <div class="content-panel">
-                    <div id="wellcome"></div>
-                    <div class="drive-wrapper drive-list-view">
-                        <span id="files-list"></span>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-    </div>
+<div class="container", id="main-page">
 </div>
 
 <script type="text/javascript">
-    $(document).ready(() => {
-        // Mount ProfileCardComponent
-        m.mount(document.getElementById("profile-card"),  {
-            view: vn => {
-                return m(ProfileCardComponent, {
-                    username: "{{ user.username }}",
-                    email: "{{ user.email }}",
-                    last_login: "{{ user.last_login }}",
-                    image: "https://bootdey.com/img/Content/avatar/avatar6.png"
-                })
-            }
-        })
-        // VerticalMenuComponent 
-        m.mount(document.getElementById("vertical-menu"), VerticalMenuComponent) 
-        
-        // WellcomeComponent 
-        m.mount(document.getElementById("wellcome"),  {
-            view: vn => {
-                return m(WellcomeComponent, {
-                    name: "{{ user.name }}",
-                    folder_id: "{{ current_folder }}",
-                })
-            }
-        })
 
-        //Files list
-        m.mount(document.getElementById("files-list"), Tablecomponent) 
+    $(document).ready(() => {
+        m.mount(document.getElementById("main-page"),  {
+            view: vn => {
+                return m(DynamicStruct, {
+                    ws_address: Object.freeze({
+                        uuid: "{{ ws_address }}"
+                    })
+                })
+            }
+        })
     })
 </script>

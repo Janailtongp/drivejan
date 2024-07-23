@@ -1,8 +1,8 @@
 attachments/
 __pycache__/
+box/__pycache__/
 *.py[cod]
+*.pyc
 # Environments
 .env
 .venv
-env/
-venv/

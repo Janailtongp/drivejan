@@ -36,12 +36,14 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'daphne',
     'django.contrib.staticfiles',
 
     'django_extensions',
     'box',
     'rest_framework',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
+    'channels'
 ]
 
 MIDDLEWARE = [
@@ -72,8 +74,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'setup.wsgi.application'
-
+# WSGI_APPLICATION = 'setup.wsgi.application'
+ASGI_APPLICATION = "asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -121,11 +123,8 @@ USE_TZ: bool = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL: str = 'static/'
+MEDIA_URL: str = "/attachments/"
 
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-    BASE_DIR / "attachments",
-]
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -141,5 +140,19 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
-    "PAGE_SIZE": 100,
+    # "PAGE_SIZE": 100,
+}
+
+CHANNEL_LAYERS = {
+    'default': {
+        ### Via local Redis
+        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        # 'CONFIG': {
+        #      "hosts": [('127.0.0.1', 6379)],
+        # },
+
+        ### Method 3: Via In-memory channel layer
+        ## Using this method.
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    },
 }
