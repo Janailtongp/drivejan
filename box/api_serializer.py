@@ -5,11 +5,19 @@ from rest_framework import serializers
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
-        fields = ['url', 'username', 'email', 'is_staff']
+        fields = ['pk', 'name', 'url', 'username', 'email', 'is_staff', 'gravatar_url']
+
 class FolderSerializer(serializers.HyperlinkedModelSerializer):
+    created_at = serializers.DateTimeField(format="%d/%m/%Y as %H:%M")
     class Meta:
         model = Folder
-        fields = "__all__"
+        fields = [
+            "pk",
+            "name",
+            "full_path",
+            "get_items",
+            "created_at",
+        ]
 
 class AttachmentSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

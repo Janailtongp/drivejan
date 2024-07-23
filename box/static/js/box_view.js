@@ -1,18 +1,21 @@
 var BoxStorage = {
     token: {},
-    data: {}
+    data: {},
+    user: {},
 }
 
 var ProfileCardComponent = {
     view: vnode => {
+        if (!BoxStorage.user[vnode.attrs.uuid])
+            return ""
+        let user = BoxStorage.user[vnode.attrs.uuid]
         return m(".user-info", [
             m("img.mg-profile.img-circle.img-responsive.center-block", {
-                src: vnode.attrs.image
+                src: user.gravatar_url
             }),
             m("ul.meta.list.list-unstyled", [
-                m("li.name", `@${vnode.attrs.username}`),
-                m("li.email.small", `${vnode.attrs.email}`),
-                m("li.activity.small", `Acesso em: ${vnode.attrs.last_login}`),
+                m("li.name", `@${user.username}`),
+                m("li.email.small", `${user.email}`),
             ])
         ])
     }
@@ -38,68 +41,166 @@ var VerticalMenuComponent = {
 }
 
 var WellcomeComponent = {
+    oninit: vnode => {
+        m.request({
+            url: `/api/box/users/`,
+            method: "GET",
+            headers: {
+                "Authorization": "Token " + BoxStorage.token[vnode.attrs.uuid]
+            }   
+        }).then(data => {
+            BoxStorage.user[vnode.attrs.uuid] = data[0]
+        }).catch(err => {
+            console.log(err)
+        })
+    },
     view: vnode => {
+        if (!BoxStorage.user[vnode.attrs.uuid])
+                return ""
+        let user = BoxStorage.user[vnode.attrs.uuid]
         return m(".content-header-wrapper", [
-            m("h2.title", `Seja bem vindo(a) ${vnode.attrs.name}`),
-            m("h2.title", `UUID ${vnode.attrs.uuid}`),
-            m("h2.title", `Token) ${BoxStorage.token[vnode.attrs.uuid]}`),
-            m(".actions", m("button.btn.btn-success", [
-                m("i.fa.fa-plus"),
-                vnode.attrs.folder_id ? " Carregar novo item" : " Criar nova pasta"
-            ]))
+            m("h2.title", `Seja bem vindo(a) ${user.name}`),
+            m(".actions", [
+                (
+                    Tablecomponent.folder_id ? m("button.btn.btn-success", [
+                        m("i.fa.fa-plus"), " Add arquivo"
+                    ]) : ""
+                ),
+                m("button.btn.btn-info", [
+                    m("i.fa.fa-plus"), " Criar nova pasta"
+                ])
+            ])
         ])
     }
 }
 
 var Tablecomponent = {
-    storage: [
-        {
-            id: 1,
-            type: "folder",
-            name: "Meus Documentos",
-            create_date: "Jul 19, 2024",
-            url: null,
-            size: "--",
-        },
-        {
-            id: 1,
-            type: "attachment",
-            name: "Meeting Notes.txt",
-            create_date: "Sep 20, 2015",
-            url: "#",
-            size: "171 MB",
-        }
-    ],
-
-    view: vnode => {
-        return m("table.table", [
-            m("thead",
-                m("tr", [
-                    m("th.type", ""),
-                    m("th.name.truncate", "Nome"),
-                    m("th.date", "Enviado"),
-                    m("th.download", ""),
-                    m("th.size", "Tamanho")
-                ])
-            ),
-            m("tbody", (Tablecomponent.storage||[]).map(item => {
-                return m("tr", [
-                    m("td.type", m("i" + FileComponent.get_icon(item))),
-                    m("td.name.truncate", item.name),
-                    m("td.date", item.create_date),
-                    m("td.download", FileComponent.get_url(item)),
-                    m("td.size", item.size),
-                ])
-            }))
-        ])
+    folder_id: null,
+    oninit: vnode => {
+        Tablecomponent.get_folder(vnode)
     },
+    get_folder: (vnode) => {
+        let url = "/api/box/folders/"
+        if (Tablecomponent.folder_id) {
+            url = `/api/box/folders/${Tablecomponent.folder_id}/`
+        }
+        m.request({
+            url: url,
+            method: "GET",
+            headers: {
+                "Authorization": "Token " + BoxStorage.token[vnode.attrs.uuid]
+            }   
+        }).then(data => {
+            BoxStorage.data[vnode.attrs.uuid] = Tablecomponent.folder_id ? [data] : data
+        }).catch(err => {
+            console.log(err)
+        })
+    },
+    get_current_path: vnode => {
+        let home = m("a", {
+            href: "javascript:void(0);",
+            onclick: evt => {
+                Tablecomponent.folder_id = null
+                Tablecomponent.get_folder(vnode)
+                m.redraw()
+            }
+        }, m("i.fa.fa-home"))
+
+        if (!Tablecomponent.folder_id)
+            return [m("li", home)]
+        return [
+            m("li", home),
+            (BoxStorage.data[vnode.attrs.uuid]||[]).map(folder => {
+                return (folder.full_path||[]).map(parent => {
+                    return [
+                        m("li", "/"),
+                        m("li", 
+                        (
+                            Tablecomponent.folder_id == parent.pk ? m("li", m("u", parent.name)) : m("a", {
+                                href: "javascript:void(0);",
+                                    onclick: evt => {
+                                        Tablecomponent.folder_id = parent.pk
+                                        Tablecomponent.get_folder(vnode)
+                                        m.redraw()
+                                    }
+                                }, parent.name)
+                            )
+                        )
+                    ]
+                })
+            })
+        ]
+    },
+    get_folder_items: (vnode) => {
+        if (Tablecomponent.folder_id) {
+            return BoxStorage.data[vnode.attrs.uuid].map(folder => folder.get_items)[0]
+        }
+        return BoxStorage.data[vnode.attrs.uuid].map(folder => {
+            return {
+                "type": "folder",
+                "pk": folder.pk,
+                "name": folder.name,
+                "created_at": folder.created_at,
+            }
+        })
+    },
+    view: vnode => {
+        if (!BoxStorage.data[vnode.attrs.uuid])
+            return ""
+        let items = Tablecomponent.get_folder_items(vnode)
+        return [
+            m("ul.list-inline", [
+                m("li", "Você está em: "),
+                ...Tablecomponent.get_current_path(vnode),
+            ]),
+            m("table.table", [
+                m("thead",
+                    m("tr", [
+                        m("th", ""),
+                        m("th", "Nome"),
+                        m("th", "Enviado"),
+                        m("th", "Tamanho"),
+                        m("th", ""),
+                    ])
+                ),
+                m("tbody", items.map(item => {
+                    return m("tr", [
+                        m("td", FileComponent.get_icon(item)),
+                        m("td", {title: item.name}, Tablecomponent.get_linked_name(vnode, item)),
+                        m("td", item.created_at),
+                        m("td", item.size),
+                        m("td", FileComponent.get_url(item)),
+                    ])
+                }))
+            ]),
+            items.length < 1 ?  m(".qrcode", {rowspan:"2"}, m("h3", "Pasta vazia")) : ""
+        ]
+    },
+    get_linked_name: (vnode, item) => {
+        let name = item.short_name ? item.short_name: item.name
+        if (item.type == "folder") {
+            return m("a", {
+                href: "javascript:void(0);",
+                target: "",
+                onclick: evt => {
+                    Tablecomponent.folder_id = item.pk
+                    Tablecomponent.get_folder(vnode)
+                    m.redraw()
+                }
+            }, name)
+        }
+        return m("a", {href: item.url, target: "blank_"}, name)
+    }
 }
 
 var FileComponent = {
     get_icon: (item) => {
-        let arr_name = item.name.split(".")
+        if (item.type == "folder")
+            return m("i.fa.fa-folder")
+
+        let arr_name = (item.url||"").split(".")
         let ext = arr_name[arr_name.length -1]
-        return {
+        let icon = {
             "txt": ".fa.fa-file-text-o",
             "jpg": ".fa.fa-file-image-o",
             "ptt": ".fa.fa-file-powerpoint-o",
@@ -108,6 +209,8 @@ var FileComponent = {
             "doc": ".fa.fa-file-word-o",
             "html": ".fa.fa-file-code-o",
         }[(ext||"").toLocaleLowerCase()] || ".fa.fa-folder"
+
+        return m("i"+ icon, {title: "." + (ext||"").toLocaleLowerCase()})
     },
     get_url: (item) => {
         if (item.type == "folder")

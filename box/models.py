@@ -1,5 +1,7 @@
 import os
 import uuid
+import hashlib
+from urllib.parse import urlencode
 from django.db import models
 from django.db.models.signals import post_save
 from django.contrib.auth.models import (
@@ -14,7 +16,7 @@ from django.core.files.storage import FileSystemStorage
 
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 # Create your models here.
 
 from django.dispatch import receiver
@@ -65,6 +67,13 @@ class User(AbstractBaseUser, PermissionsMixin):
             return token.key
         return None
 
+    def gravatar_url(self) -> str:
+        email_encoded: bytes = self.email.lower().encode('utf-8')
+        email_hash: str = hashlib.sha256(email_encoded).hexdigest()
+        params: str = urlencode({'s': '300'})
+        return f"https://www.gravatar.com/avatar/{email_hash}?{params}"
+
+
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
@@ -75,7 +84,7 @@ class PerfilManager(models.Manager):
         return self.get(name=name)
 
 class Folder(MPTTModel):
-    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     parent = TreeForeignKey(
         "self",
         null=True,
@@ -125,6 +134,32 @@ class Folder(MPTTModel):
         self.full_clean()
         return super(Folder, self).save(*args, **kwargs)
 
+    def full_path(self) -> List:
+        return list(self.get_ancestors(
+            ascending=False,
+            include_self=True
+        ).values("pk", "name"))
+
+    def get_items(self):
+        items: List[Dict] = []
+        for folder in self.get_children():
+            items.append({
+                "type": "folder",
+                "pk": folder.pk,
+                "name": folder.name,
+                "created_at": folder.created_at.strftime('%d/%m/%Y as %H:%m'),
+            })
+        for attachment in self.files.all():
+            items.append({
+                "type": "attachment",
+                "pk": attachment.pk,
+                "name": attachment.get_realy_filename(),
+                "short_name": attachment.get_filename_elipsys(),
+                "created_at": attachment.created_at.strftime('%d/%m/%Y as %H:%m'),
+                "url": attachment.get_url(),
+            })
+        return items
+
 
 def attachment_unic_path(instance, filename):
     """Função usada no upload_to do Anexo para calcular um nome único."""
@@ -143,16 +178,17 @@ class Attachment(models.Model):
         upload_to="devta/",
         max_length=1024,
     )
-    folder = models.OneToOneField(Folder, on_delete=models.CASCADE)
+    folder = models.ForeignKey(Folder, related_name="files", on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ("file",)
 
     def get_filename_elipsys(self):
         name: str = self.get_realy_filename()
-        if len(name) <= 50:
+        if len(name) <= 30:
             return name
-        return name[:50] + "..."
+        return name[:30] + b" ..."
 
     def get_realy_filename(self) -> str:
         """Return the name witout UUID4."""
